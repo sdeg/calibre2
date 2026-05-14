@@ -230,10 +230,13 @@ async function copyText() {
     <!-- Barre de statut -->
     <footer class="footer">
       <span>{{ wordCount }} mot{{ wordCount !== 1 ? 's' : '' }} · {{ charCount }} caractère{{ charCount !== 1 ? 's' : '' }}</span>
-      <span class="status">
-        <span class="dot pulse"></span>
-        Sauvegarde auto
-      </span>
+      <div class="footer-right">
+        <span class="version">v0.1.4</span>
+        <span class="status">
+          <span class="dot pulse"></span>
+          Sauvegarde auto
+        </span>
+      </div>
     </footer>
   </div>
 </template>
@@ -442,6 +445,17 @@ async function copyText() {
   font-size: 0.75rem;
   color: #9ca3af;
   flex-shrink: 0;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.version {
+  font-family: monospace;
+  opacity: 0.8;
 }
 
 .status {
