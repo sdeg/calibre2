@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 interface Entry {
   id: string
@@ -45,6 +45,7 @@ const currentId = ref('')
 const content = ref('')
 const copied = ref(false)
 const hydrated = ref(false)
+const editorRef = ref<HTMLTextAreaElement | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const currentEntry = computed(() => entries.value.find(e => e.id === currentId.value))
@@ -116,6 +117,9 @@ function newEntry() {
   currentId.value = entry.id
   content.value = ''
   persist(entries.value)
+  nextTick(() => {
+    editorRef.value?.focus()
+  })
 }
 
 function deleteEntry() {
@@ -194,6 +198,7 @@ async function copyText() {
     <!-- Textarea -->
     <main class="main">
       <textarea
+        ref="editorRef"
         class="editor"
         v-model="content"
         @input="onContentInput"
