@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { marked } from 'marked'
 
 interface Entry {
   id: string
   content: string
   updatedAt: string
+  isMarkdown?: boolean
 }
 
 const STORAGE_KEY = 'textpad_entries'
@@ -45,6 +47,7 @@ const currentId = ref('')
 const content = ref('')
 const copied = ref(false)
 const hydrated = ref(false)
+const isMarkdown = ref(false)
 const editorRef = ref<HTMLTextAreaElement | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -64,7 +67,7 @@ onMounted(() => {
   const urlId = new URLSearchParams(window.location.search).get('id') ?? ''
 
   if (stored.length === 0) {
-    const first: Entry = { id: generateId(), content: '', updatedAt: new Date().toISOString() }
+    const first: Entry = { id: generateId(), content: '', updatedAt: new Date().toISOString(), isMarkdown: false }
     entries.value = [first]
     currentId.value = first.id
     content.value = ''
@@ -76,6 +79,7 @@ onMounted(() => {
       ?? stored[0]
     currentId.value = active.id
     content.value = active.content
+    isMarkdown.value = !!active.isMarkdown
   }
   hydrated.value = true
 })
@@ -92,7 +96,7 @@ function flushSave() {
   if (debounceTimer) clearTimeout(debounceTimer)
   entries.value = entries.value.map(e =>
     e.id === currentId.value
-      ? { ...e, content: content.value, updatedAt: new Date().toISOString() }
+      ? { ...e, content: content.value, updatedAt: new Date().toISOString(), isMarkdown: isMarkdown.value }
       : e
   )
   persist(entries.value)
@@ -107,15 +111,18 @@ function onContentInput() {
 function selectEntry(id: string) {
   flushSave()
   currentId.value = id
-  content.value = entries.value.find(e => e.id === id)?.content ?? ''
+  const entry = entries.value.find(e => e.id === id)
+  content.value = entry?.content ?? ''
+  isMarkdown.value = !!entry?.isMarkdown
 }
 
 function newEntry() {
   flushSave()
-  const entry: Entry = { id: generateId(), content: '', updatedAt: new Date().toISOString() }
+  const entry: Entry = { id: generateId(), content: '', updatedAt: new Date().toISOString(), isMarkdown: false }
   entries.value = [entry, ...entries.value]
   currentId.value = entry.id
   content.value = ''
+  isMarkdown.value = false
   persist(entries.value)
   nextTick(() => {
     editorRef.value?.focus()
@@ -136,7 +143,13 @@ function deleteEntry() {
 }
 
 async function copyText() {
-  await navigator.clipboard.writeText(content.value)
+  let textToCopy = content.value
+
+  if (isMarkdown.value) {
+    textToCopy = await marked.parse(content.value)
+  }
+
+  await navigator.clipboard.writeText(textToCopy)
   copied.value = true
   setTimeout(() => { copied.value = false }, 2000)
 }
@@ -181,6 +194,12 @@ async function copyText() {
             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </button>
+
+      <!-- Markdown Toggle -->
+      <label class="markdown-toggle">
+        <input type="checkbox" v-model="isMarkdown" @change="flushSave">
+        <span class="markdown-label">Markdown</span>
+      </label>
 
       <!-- Copier -->
       <button class="btn" :class="copied ? 'btn-success' : 'btn-primary'" @click="copyText">
@@ -356,6 +375,28 @@ async function copyText() {
 }
 
 .btn-danger:hover { background: #fef2f2; color: #ef4444; }
+
+/* Markdown Toggle */
+.markdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.markdown-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.markdown-toggle input {
+  cursor: pointer;
+}
 
 /* Textarea */
 .main {
