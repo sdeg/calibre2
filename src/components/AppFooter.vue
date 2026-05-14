@@ -83,7 +83,7 @@ function onActionChange(event: Event) {
       <input type="file" ref="fileInputRef" @change="handleImport" accept=".json" style="display: none">
     </div>
     <div class="footer-right">
-      <span class="version">v0.1.4</span>
+      <span class="version">v0.1.8</span>
       <span class="status">
         <span class="dot pulse"></span>
         Sauvegarde auto
