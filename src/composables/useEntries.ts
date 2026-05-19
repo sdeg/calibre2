@@ -1,4 +1,4 @@
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 
 export interface Entry {
   id: string
@@ -32,12 +32,6 @@ export function useEntries() {
 
   function persist(data: Entry[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  }
-
-  function setUrlId(id: string) {
-    const url = new URL(window.location.href)
-    url.searchParams.set('id', id)
-    history.replaceState(null, '', url)
   }
 
   function flushSave() {
@@ -89,7 +83,6 @@ export function useEntries() {
 
   onMounted(() => {
     const stored = loadEntries()
-    const urlId = new URLSearchParams(window.location.search).get('id') ?? ''
 
     if (stored.length === 0) {
       const first: Entry = { id: generateId(), content: '', updatedAt: new Date().toISOString(), isMarkdown: false }
@@ -99,8 +92,7 @@ export function useEntries() {
       persist([first])
     } else {
       entries.value = stored
-      const active = stored.find(e => e.id === urlId)
-        ?? stored.find(e => e.id === (localStorage.getItem(CURRENT_KEY) ?? ''))
+      const active = stored.find(e => e.id === (localStorage.getItem(CURRENT_KEY) ?? ''))
         ?? stored[0]
       currentId.value = active.id
       content.value = active.content
@@ -112,7 +104,6 @@ export function useEntries() {
   watch(currentId, id => {
     if (!hydrated.value) return
     localStorage.setItem(CURRENT_KEY, id)
-    setUrlId(id)
   })
 
   return {
